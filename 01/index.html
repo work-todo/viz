@@ -25,10 +25,20 @@
             width:30px;
             height:0;
             text-align:center;
+            animation:bar-enter .8s;
+            transform-origin:center bottom;
         }
         .bar:hover{
             cursor:pointer;
             opacity:.6;
+        }
+        @keyframes bar-enter{
+            from{
+                transform:scaleY(0)
+            }
+            to{
+                transform:scaleY(1)
+            }
         }
     </style>
     <script src="../lib/util.js"></script>
@@ -48,7 +58,6 @@
 
         let books = await require('./books') || [];
         let left = 10,margin = 10,barWidth = 30;
-        let nextQueue = [];
 
         let types = [],typeMap = {};
         let maxBarHeight = 1;
@@ -78,23 +87,16 @@
             bar.style({
                 left:left + 'px',
                 width:barWidth + 'px',
+                height:item.count * unitHeight + 'px',
                 backgroundColor:bgColor
             });
             bar.innerText = item.count;
-            nextQueue.push(function () {
-                bar.style({
-                    transition:'height 400ms',
-                    height:item.count * unitHeight + 'px'
-                });
-            });
             canvas.appendChild(bar);
             left = left + barWidth + margin;
         });
 
         canvas.render();
         document.body.appendChild(canvas.el);
-
-        nextQueue.forEach(nextFrame);
     }
     render();
 </script>

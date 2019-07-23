@@ -25,6 +25,8 @@
             width:30px;
             height:0;
             text-align:center;
+            animation:bar-enter .8s;
+            transform-origin:center bottom;
         }
         .bar:hover{
             cursor:pointer;
@@ -61,11 +63,20 @@
             right: 10px;
             bottom: -5px;
         }
+        @keyframes bar-enter{
+            from{
+                transform:scaleY(0)
+            }
+            to{
+                transform:scaleY(1)
+            }
+        }
     </style>
     <script src="../lib/util.js"></script>
     <script src="../lib/html-shape.js"></script>
 </head>
 <body>
+<button onclick="reRender()">刷新</button>
 <script>
     const colors = ['#e57373','#9575cd','#4fc3f7','#4db6ac','#aed581','#fadd60'];
     let canvasHeight = 300;
@@ -86,9 +97,10 @@
         }
         return axisPanel;
     }
+    let canvas;
     async function render() {
         //创建画布
-        let canvas = createShape('div');
+        canvas = createShape('div');
         let maxHeight = document.body.clientHeight / 2;
         canvas.class('canvas',true).style({
             top:maxHeight / 2 + 'px'
@@ -96,7 +108,6 @@
 
         let books = await require('./books') || [];
         let left = 10,margin = 10,barWidth = 30;
-        let nextQueue = [];
 
         let types = [],typeMap = {};
         let maxBarHeight = 1;
@@ -126,15 +137,10 @@
             bar.style({
                 left:left + 'px',
                 width:barWidth + 'px',
+                height:item.count * unitHeight + 'px',
                 backgroundColor:bgColor
             });
             bar.innerHTML = '<span>' + item.count + '</span>' + '<label>' + item.name + '</label>';
-            nextQueue.push(function () {
-                bar.style({
-                    transition:'height 400ms',
-                    height:item.count * unitHeight + 'px'
-                });
-            });
             canvas.appendChild(bar);
             left = left + barWidth + margin;
         });
@@ -145,8 +151,11 @@
 
         canvas.render();
         document.body.appendChild(canvas.el);
-
-        nextQueue.forEach(nextFrame);
+    }
+    function reRender() {
+        if(canvas){
+            canvas.render(true);
+        }
     }
     render();
 </script>
