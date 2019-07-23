@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style type="text/css">
+        body,html{
+            height:100%;
+            overflow:hidden;
+        }
+        body *{
+            box-sizing: border-box;
+        }
+        .canvas{
+            position:absolute;
+            width:500px;
+            height:400px;
+            left:100px;
+            border:1px solid #ccc;
+            font-size:12px;
+        }
+        .bar{
+            position:absolute;
+            bottom:0;
+            width:30px;
+            height:0;
+            text-align:center;
+        }
+        .bar:hover{
+            cursor:pointer;
+            opacity:.6;
+        }
+    </style>
+    <script src="../lib/util.js"></script>
+    <script src="../lib/html-shape.js"></script>
+</head>
+<body>
+<script>
+    const colors = ['#e57373','#9575cd','#4fc3f7','#4db6ac','#aed581','#fadd60'];
+    let canvasHeight = 300;
+    async function render() {
+        //创建画布
+        let canvas = createShape('div');
+        let maxHeight = document.body.clientHeight / 2;
+        canvas.class('canvas',true).style({
+            top:maxHeight / 2 + 'px'
+        });
+
+        let books = await require('./books') || [];
+        let left = 10,margin = 10,barWidth = 30;
+        let nextQueue = [];
+
+        let types = [],typeMap = {};
+        let maxBarHeight = 1;
+        books.forEach(function (book) {
+            let type = book.type;
+            let item = typeMap[type];
+            if(!item){
+                typeMap[type] = {
+                    count:book.count,
+                    name:type,
+                    items:[book]
+                };
+                types.push(type);
+            }else{
+                item.count += book.count;
+                item.items.push(type);
+                maxBarHeight = Math.max(item.count,maxBarHeight);
+            }
+        });
+        let unitHeight = canvasHeight / maxBarHeight;
+        types.forEach(function (type,index) {
+
+            let item = typeMap[type];
+            let bgColor = colors[index % colors.length];
+            let bar = createShape('div');
+            bar.class('bar',true);
+            bar.style({
+                left:left + 'px',
+                width:barWidth + 'px',
+                backgroundColor:bgColor
+            });
+            bar.innerText = item.count;
+            nextQueue.push(function () {
+                bar.style({
+                    transition:'height 400ms',
+                    height:item.count * unitHeight + 'px'
+                });
+            });
+            canvas.appendChild(bar);
+            left = left + barWidth + margin;
+        });
+
+        canvas.render();
+        document.body.appendChild(canvas.el);
+
+        nextQueue.forEach(nextFrame);
+    }
+    render();
+</script>
+</body>
+</html>

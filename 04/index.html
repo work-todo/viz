@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style type="text/css">
+        body,html{
+            height:100%;
+            overflow:hidden;
+        }
+        body *{
+            box-sizing: border-box;
+        }
+        .canvas{
+            position:absolute;
+            width:500px;
+            height:400px;
+            left:100px;
+            border-bottom:1px solid #ccc;
+            font-size:12px;
+        }
+        .bar{
+            position:absolute;
+            bottom:0;
+            width:30px;
+            height:0;
+            text-align:center;
+        }
+        .bar:hover{
+            cursor:pointer;
+            opacity:.6;
+        }
+        .bar label{
+            position: absolute;
+            bottom:-20px;
+            left:0;
+            width:100%;
+            text-align: center;
+        }
+
+        .axis-y{
+            position: absolute;
+            left:0;
+            bottom:0;
+            width:0;
+            border-left:1px solid #ccc;
+            padding:0;
+            margin:0;
+            color:blue;
+            list-style: none;
+        }
+        .axis-y li{
+            position: absolute;
+            left:-5px;
+            width:5px;
+            border-top:1px solid #ccc;
+            height:0;
+        }
+        .axis-text{
+            position: absolute;
+            right: 10px;
+            bottom: -5px;
+        }
+        html-path{
+            position: absolute;
+            bottom:0;
+            left:0;
+        }
+        .point-cvs{
+            position: absolute;
+            bottom:0;
+            left:0;
+            width:400px;
+            height:300px;
+        }
+        .line-point{
+            position: absolute;
+            width:6px;
+            height:6px;
+            margin-left:-3px;
+            margin-top:-3px;
+            border:1px solid red;
+            overflow: hidden;
+            border-radius:50%;
+            background-color: #4ff938;
+        }
+        .x-axis-label{
+            position: absolute;
+            width: 12px;
+            margin-top: 4px;
+            margin-left: -4px;
+            text-align: center;
+        }
+    </style>
+    <script src="../lib/util.js"></script>
+    <script src="../lib/html-shape.js"></script>
+    <script src="./path.js"></script>
+</head>
+<body>
+<button onclick="reRender()">刷新</button>
+<script>
+    const colors = ['#e57373','#9575cd','#4fc3f7','#4db6ac','#aed581','#fadd60'];
+    let canvasHeight = 300,canvasWidth = 400;
+    function renderYAxis(min,max,maxHeight){
+        let len = max - min;
+        let unitHeight = maxHeight / len;
+        let count = Math.round(maxHeight / 20);
+        count = Math.max(1,count);
+
+        let step = Math.round(len / count);
+        let current = min;
+
+        let axisMax = max + 10;
+        let yAxisPanel = createShape('ul').class('axis-y').style({
+            height:(axisMax - min) * unitHeight + 'px'
+        });
+        while(current <= axisMax){
+            let y = (current - min) * unitHeight;
+
+            let xAxisLabel = createShape('li').style({
+                bottom:y + 'px'
+            });
+            xAxisLabel.innerHTML = '<i class="axis-text">' + current + '</i>';
+            yAxisPanel.appendChild(xAxisLabel);
+            current += step;
+        }
+        return yAxisPanel;
+    }
+
+    let canvas;
+    async function render() {
+        //创建画布
+        canvas = createShape('div');
+        let maxHeight = document.body.clientHeight / 2;
+        canvas.class('canvas',true).style({
+            top:maxHeight / 2 + 'px'
+        });
+
+        let temperatures = await require('./temperatures') || [];
+
+        let maxTemp = 0,minTemp = 0;
+        temperatures.forEach(function (temp,index) {
+            if(index === 0){
+                maxTemp = temp.value;
+                minTemp = temp.value;
+            }
+            maxTemp = Math.max(maxTemp,temp.value);
+            minTemp = Math.min(minTemp,temp.value);
+        });
+
+        let unitHeight = canvasHeight / (maxTemp - minTemp),
+            unitWidth = canvasWidth / temperatures.length;
+
+        let pathDesc = [],left = 10;
+
+
+        let pointCvs = createShape('div').class('point-cvs',true);
+        temperatures.forEach(function (item,index) {
+            let com = index === 0 ? 'M' : 'L';
+            let y = unitHeight * (item.value - minTemp);
+
+            //翻转y轴
+            y = canvasHeight - y;
+            y = Math.round(y);
+
+            let x = left;
+            x = Math.round(x);
+            pathDesc.push(com + x + ' ' + y);
+
+            left += unitWidth;
+
+            let point = createShape('div').class('line-point',true);
+            point.style({
+                left:x + 'px',
+                top:y + 'px'
+            });
+            pointCvs.appendChild(point);
+
+            let pointLabel = createShape('div').class('x-axis-label');
+            pointLabel.style({
+                left:x + 'px',
+                top:canvasHeight + 'px'
+            });
+            pointLabel.innerText = item.name;
+            pointCvs.appendChild(pointLabel);
+        });
+
+        let line = createShape('html-path');
+        line.setAttribute('d',pathDesc.join(' '));
+        line.setAttribute('fill','none');
+        line.setAttribute('stroke','blue');
+        canvas.appendChild(line);
+
+        canvas.appendChild(pointCvs);
+
+
+        //创建Y坐标轴
+        let xAxisPanel = renderYAxis(minTemp,maxTemp,canvasHeight);
+        canvas.appendChild(xAxisPanel);
+
+        canvas.render();
+        document.body.appendChild(canvas.el);
+    }
+    function reRender() {
+        if(canvas){
+            canvas.render(true);
+        }
+    }
+    render();
+</script>
+</body>
+</html>
